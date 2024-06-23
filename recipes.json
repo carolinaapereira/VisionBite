@@ -1,0 +1,177 @@
+{
+  "recipes": [
+    {
+      "id": 1,
+      "name": "Chicken Fried Rice",
+      "ingredients": [
+        {"name": "chicken", "quantity": "200g"},
+        {"name": "rice", "quantity": "1 cup"},
+        {"name": "egg", "quantity": "2"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "carrot", "quantity": "1"},
+        {"name": "mushroom", "quantity": "3"},
+        {"name": "soy sauce", "quantity": "2 tbsp"}
+      ],
+      "instructions": [
+        "Cook the rice and set aside.",
+        "In a pan, cook the diced chicken until browned.",
+        "Add chopped onion, carrot, and mushroom to the pan and stir-fry until vegetables are tender.",
+        "Push the ingredients to one side of the pan and scramble the egg on the other side.",
+        "Mix everything together and add cooked rice.",
+        "Pour in soy sauce and stir until everything is well combined."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Tomato and Lettuce Salad",
+      "ingredients": [
+        {"name": "lettuce", "quantity": "1"},
+        {"name": "tomato", "quantity": "2"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "olive oil", "quantity": "2 tbsp"},
+        {"name": "lemon juice", "quantity": "1 tbsp"},
+        {"name": "salt", "quantity": "to taste"},
+        {"name": "pepper", "quantity": "to taste"}
+      ],
+      "instructions": [
+        "Chop the lettuce, tomato, and onion.",
+        "In a large bowl, combine the chopped vegetables.",
+        "Drizzle with olive oil and lemon juice.",
+        "Season with salt and pepper to taste.",
+        "Toss everything together until well mixed."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Mushroom and Egg Stir-fry",
+      "ingredients": [
+        {"name": "mushroom", "quantity": "6"},
+        {"name": "egg", "quantity": "3"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "soy sauce", "quantity": "1 tbsp"},
+        {"name": "garlic", "quantity": "2 cloves"},
+        {"name": "olive oil", "quantity": "2 tbsp"}
+      ],
+      "instructions": [
+        "Slice the mushrooms and chop the onion.",
+        "Heat olive oil in a pan and sauté the onion until translucent.",
+        "Add the mushrooms and cook until they release their juices and start to brown.",
+        "Push the vegetables to one side of the pan and scramble the eggs on the other side.",
+        "Mix everything together and add a splash of soy sauce.",
+        "Stir well and serve hot."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Chicken and Carrot Stew",
+      "ingredients": [
+        {"name": "chicken", "quantity": "300g"},
+        {"name": "carrot", "quantity": "2"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "tomato", "quantity": "2"},
+        {"name": "garlic", "quantity": "3 cloves"},
+        {"name": "chicken broth", "quantity": "4 cups"},
+        {"name": "salt", "quantity": "to taste"},
+        {"name": "pepper", "quantity": "to taste"},
+        {"name": "thyme", "quantity": "1 tsp"}
+      ],
+      "instructions": [
+        "In a large pot, heat some oil and sauté chopped onion and garlic until fragrant.",
+        "Add diced chicken and cook until browned.",
+        "Add chopped carrots and tomatoes to the pot.",
+        "Pour in chicken broth and add thyme, salt, and pepper.",
+        "Bring to a boil, then reduce heat and let simmer until vegetables are tender and chicken is cooked through.",
+        "Serve hot."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Carrot and Tomato Soup",
+      "ingredients": [
+        {"name": "carrot", "quantity": "3"},
+        {"name": "tomato", "quantity": "4"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "garlic", "quantity": "2 cloves"},
+        {"name": "chicken broth", "quantity": "4 cups"},
+        {"name": "olive oil", "quantity": "2 tbsp"},
+        {"name": "salt", "quantity": "to taste"},
+        {"name": "pepper", "quantity": "to taste"}
+      ],
+      "instructions": [
+        "Chop the carrots, tomatoes, and onion.",
+        "In a pot, heat olive oil and sauté the onion and garlic until fragrant.",
+        "Add the carrots and cook for a few minutes.",
+        "Add the tomatoes and chicken broth.",
+        "Bring to a boil, then reduce heat and let simmer until carrots are tender.",
+        "Blend the soup until smooth and season with salt and pepper to taste."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Chicken Lettuce Wraps",
+      "ingredients": [
+        {"name": "chicken", "quantity": "200g"},
+        {"name": "lettuce", "quantity": "1"},
+        {"name": "onion", "quantity": "1/2"},
+        {"name": "mushroom", "quantity": "3"},
+        {"name": "soy sauce", "quantity": "2 tbsp"},
+        {"name": "garlic", "quantity": "2 cloves"},
+        {"name": "olive oil", "quantity": "2 tbsp"}
+      ],
+      "instructions": [
+        "Dice the chicken and chop the onion and mushrooms.",
+        "Heat olive oil in a pan and sauté the onion and garlic until fragrant.",
+        "Add the chicken and cook until browned.",
+        "Add the mushrooms and cook until tender.",
+        "Stir in soy sauce.",
+        "Spoon the mixture into lettuce leaves and serve."
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Tomato Egg Drop Soup",
+      "ingredients": [
+        {"name": "tomato", "quantity": "3"},
+        {"name": "egg", "quantity": "2"},
+        {"name": "chicken broth", "quantity": "4 cups"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "garlic", "quantity": "2 cloves"},
+        {"name": "cornstarch", "quantity": "1 tbsp"},
+        {"name": "water", "quantity": "2 tbsp"},
+        {"name": "salt", "quantity": "to taste"},
+        {"name": "pepper", "quantity": "to taste"}
+      ],
+      "instructions": [
+        "Chop the tomatoes and onion.",
+        "In a pot, heat some oil and sauté the onion and garlic until fragrant.",
+        "Add the tomatoes and cook until soft.",
+        "Pour in the chicken broth and bring to a boil.",
+        "Mix cornstarch with water to make a slurry and add to the soup.",
+        "Beat the eggs and slowly drizzle them into the boiling soup while stirring to create egg ribbons.",
+        "Season with salt and pepper to taste."
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Stuffed Mushrooms",
+      "ingredients": [
+        {"name": "mushroom", "quantity": "6"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "garlic", "quantity": "2 cloves"},
+        {"name": "bread crumbs", "quantity": "1/2 cup"},
+        {"name": "cheese", "quantity": "1/2 cup"},
+        {"name": "olive oil", "quantity": "2 tbsp"},
+        {"name": "salt", "quantity": "to taste"},
+        {"name": "pepper", "quantity": "to taste"}
+      ],
+      "instructions": [
+        "Preheat the oven to 180°C (350°F).",
+        "Remove the stems from the mushrooms and chop them finely.",
+        "In a pan, heat olive oil and sauté the chopped mushroom stems, onion, and garlic until tender.",
+        "Mix in bread crumbs and cheese, and season with salt and pepper.",
+        "Stuff the mushroom caps with the mixture.",
+        "Place the stuffed mushrooms on a baking sheet and bake for 15-20 minutes or until the mushrooms are tender and the tops are golden."
+      ]
+    }
+  ]
+}

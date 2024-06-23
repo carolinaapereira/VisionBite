@@ -1,0 +1,21 @@
+    {
+      "id": 1,
+      "name": "Chicken Fried Rice",
+      "ingredients": [
+        {"name": "chicken", "quantity": "200g"},
+        {"name": "rice", "quantity": "1 cup"},
+        {"name": "egg", "quantity": "2"},
+        {"name": "onion", "quantity": "1"},
+        {"name": "carrot", "quantity": "1"},
+        {"name": "mushroom", "quantity": "3"},
+        {"name": "soy sauce", "quantity": "2 tbsp"}
+      ],
+      "instructions": [
+        "Cook the rice and set aside.",
+        "In a pan, cook the diced chicken until browned.",
+        "Add chopped onion, carrot, and mushroom to the pan and stir-fry until vegetables are tender.",
+        "Push the ingredients to one side of the pan and scramble the egg on the other side.",
+        "Mix everything together and add cooked rice.",
+        "Pour in soy sauce and stir until everything is well combined."
+      ]
+    }
