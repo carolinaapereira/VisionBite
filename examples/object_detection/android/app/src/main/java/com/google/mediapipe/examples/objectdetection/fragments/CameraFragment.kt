@@ -418,13 +418,6 @@ class CameraFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         }
 
         return foundRecipes
-
-        /*val menu: Button = fragmentCameraBinding.root.findViewById(R.id.results_fragment)
-        menu.setOnClickListener()
-        {
-            val resultsWindow = Intent(context, MainActivity::class.java)
-            startActivity(resultsWindow)
-        }*/
     }
 
     override fun onError(error: String, errorCode: Int) {

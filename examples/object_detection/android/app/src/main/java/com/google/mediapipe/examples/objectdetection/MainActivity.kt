@@ -17,11 +17,16 @@
 package com.google.mediapipe.examples.objectdetection
 
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
+import android.widget.Button
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.bottomnavigation.BottomNavigationItemView
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.internal.NavigationMenuItemView
 import com.google.mediapipe.examples.objectdetection.databinding.ActivityMainBinding
 import com.google.mediapipe.examples.objectdetection.fragments.CameraFragment
 import com.google.mediapipe.examples.objectdetection.fragments.GalleryFragment
@@ -51,8 +56,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun buttonClick(view: View?)
+    fun cameraItemClick(item: MenuItem)
     {
+        val navView: BottomNavigationView = findViewById(R.id.navigation)
+        //navView.selectedItemId = R.id.camera_fragment
+
+        val cameraFragment = CameraFragment()
+        supportFragmentManager.beginTransaction().replace(
+            R.id.fragment_container, cameraFragment, cameraFragment.javaClass.simpleName
+        ).addToBackStack(null).commit()
+    }
+    fun searchButtonClick(view: View?)
+    {
+        val navView: BottomNavigationView = findViewById(R.id.navigation)
+        navView.performClick()
+        navView.selectedItemId = R.id.results_fragment
+
         val resultsFragment = GalleryFragment()
         supportFragmentManager.beginTransaction().replace(
             R.id.fragment_container, resultsFragment, resultsFragment.javaClass.simpleName
