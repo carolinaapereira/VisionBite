@@ -76,7 +76,6 @@ class PermissionsFragment : Fragment() {
                 requireActivity(),
                 R.id.fragment_container
             )
-                .navigate(PermissionsFragmentDirections.actionPermissionsToCamera())
         }
     }
 

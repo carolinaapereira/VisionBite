@@ -54,11 +54,17 @@ class MainActivity : AppCompatActivity() {
         activityMainBinding.navigation.setOnNavigationItemReselectedListener {
             // ignore the reselection
         }
+
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, CameraFragment())
+                .commit()
+        }
     }
 
     fun cameraItemClick(item: MenuItem)
     {
-        val navView: BottomNavigationView = findViewById(R.id.navigation)
+        //val navView: BottomNavigationView = findViewById(R.id.navigation)
         //navView.selectedItemId = R.id.camera_fragment
 
         val cameraFragment = CameraFragment()

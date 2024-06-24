@@ -34,15 +34,20 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.google.gson.Gson
 import com.google.mediapipe.examples.objectdetection.MainViewModel
 import com.google.mediapipe.examples.objectdetection.ObjectDetectorHelper
 import com.google.mediapipe.examples.objectdetection.R
+import com.google.mediapipe.examples.objectdetection.SharedViewModel
 import com.google.mediapipe.examples.objectdetection.databinding.FragmentGalleryBinding
 import com.google.mediapipe.examples.objectdetection.databinding.FragmentCameraBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 
 class GalleryFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
 
@@ -60,31 +65,6 @@ class GalleryFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
 
-    private lateinit var objectDetectorHelper: ObjectDetectorHelper
-
-    /** Blocking ML operations are performed using this executor */
-    private lateinit var backgroundExecutor: ScheduledExecutorService
-    private val viewModel: MainViewModel by activityViewModels()
-
-    private val getContent =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            // Handle the returned Uri
-            uri?.let { mediaUri ->
-                when (val mediaType = loadMediaType(mediaUri)) {
-                    MediaType.IMAGE -> runDetectionOnImage(mediaUri)
-                    MediaType.VIDEO -> runDetectionOnVideo(mediaUri)
-                    MediaType.UNKNOWN -> {
-                        updateDisplayView(mediaType)
-                        Toast.makeText(
-                            requireContext(),
-                            "Unsupported data type.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            }
-        }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -96,214 +76,22 @@ class GalleryFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         _fragmentCameraBinding =
             FragmentCameraBinding.inflate(inflater, container, false)
 
-        val recipes = CameraFragment().searchRecipe();
+        // val view = inflater.inflate(R.layout.fragment_gallery, container, false)
+        // val view = inflater.inflate(R.layout.fragment_gallery, container, false)
+        val sharedViewModel = ViewModelProvider(requireActivity()).get(SharedViewModel::class.java)
 
-        val textView = fragmentGalleryBinding.root.findViewById<TextView>(R.id.tvPlaceholder)
-
-        // Customize text
-        textView.text = recipes.joinToString("\n")
+        // Observe the itemList LiveData
+        sharedViewModel.itemList.observe(viewLifecycleOwner, Observer { itemList ->
+            val recipes = searchRecipe(itemList)
+            val textView = fragmentGalleryBinding.root.findViewById<TextView>(R.id.tvPlaceholder)
+            if (recipes.isNotEmpty()) {
+                textView.text = recipes.joinToString("\n\n\n")
+            } else {
+                textView.setText(R.string.tv_recipes_placeholder)
+            }
+        })
 
         return fragmentGalleryBinding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-
-        initBottomSheetControls()
-    }
-
-    override fun onPause() {
-        fragmentGalleryBinding.overlay.clear()
-        if (fragmentGalleryBinding.videoView.isPlaying) {
-            fragmentGalleryBinding.videoView.stopPlayback()
-        }
-        fragmentGalleryBinding.videoView.visibility = View.GONE
-        super.onPause()
-    }
-
-    private fun initBottomSheetControls() {
-        updateControlsUi()
-        // When clicked, lower detection score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.thresholdMinus.setOnClickListener {
-            if (viewModel.currentThreshold >= 0.1) {
-                viewModel.setThreshold(viewModel.currentThreshold - 0.1f)
-            }
-        }
-
-        // When clicked, raise detection score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.thresholdPlus.setOnClickListener {
-            if (viewModel.currentThreshold <= 0.8) {
-                viewModel.setThreshold(viewModel.currentThreshold + 0.1f)
-                updateControlsUi()
-            }
-        }
-    }
-
-    // Update the values displayed in the bottom sheet. Reset detector.
-    private fun updateControlsUi() {
-        if (fragmentGalleryBinding.videoView.isPlaying) {
-            fragmentGalleryBinding.videoView.stopPlayback()
-        }
-        fragmentGalleryBinding.videoView.visibility = View.GONE
-        fragmentGalleryBinding.imageResult.visibility = View.GONE
-        fragmentGalleryBinding.overlay.clear()
-        fragmentGalleryBinding.bottomSheetLayout.thresholdValue.text =
-            String.format("%.2f", viewModel.currentThreshold)
-
-        fragmentGalleryBinding.overlay.clear()
-        fragmentGalleryBinding.tvPlaceholder.visibility = View.VISIBLE
-    }
-
-    // Load and display the image.
-    private fun runDetectionOnImage(uri: Uri) {
-        fragmentGalleryBinding.overlay.setRunningMode(RunningMode.IMAGE)
-        setUiEnabled(false)
-        backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
-        updateDisplayView(MediaType.IMAGE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val source = ImageDecoder.createSource(
-                requireActivity().contentResolver,
-                uri
-            )
-            ImageDecoder.decodeBitmap(source)
-        } else {
-            MediaStore.Images.Media.getBitmap(
-                requireActivity().contentResolver,
-                uri
-            )
-        }
-            .copy(Bitmap.Config.ARGB_8888, true)
-            ?.let { bitmap ->
-                fragmentGalleryBinding.imageResult.setImageBitmap(bitmap)
-
-                // Run object detection on the input image
-                backgroundExecutor.execute {
-
-                    objectDetectorHelper =
-                        ObjectDetectorHelper(
-                            context = requireContext(),
-                            threshold = viewModel.currentThreshold,
-                            currentDelegate = viewModel.currentDelegate,
-                            currentModel = viewModel.currentModel,
-                            maxResults = viewModel.currentMaxResults,
-                            runningMode = RunningMode.IMAGE,
-                            objectDetectorListener = this
-                        )
-
-                    objectDetectorHelper.detectImage(bitmap)
-                        ?.let { resultBundle ->
-                            activity?.runOnUiThread {
-                                fragmentGalleryBinding.overlay.setResults(
-                                    resultBundle.results[0],
-                                    bitmap.height,
-                                    bitmap.width,
-                                    resultBundle.inputImageRotation
-                                )
-
-                                setUiEnabled(true)
-                            }
-                        } ?: run {
-                        Log.e(TAG, "Error running object detection.")
-                    }
-
-                    objectDetectorHelper.clearObjectDetector()
-                }
-            }
-    }
-
-    private fun runDetectionOnVideo(uri: Uri) {
-        fragmentGalleryBinding.overlay.setRunningMode(RunningMode.VIDEO)
-        setUiEnabled(false)
-        updateDisplayView(MediaType.VIDEO)
-
-        with(fragmentGalleryBinding.videoView) {
-            setVideoURI(uri)
-            // mute the audio
-            setOnPreparedListener { it.setVolume(0f, 0f) }
-            requestFocus()
-        }
-
-        backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
-        backgroundExecutor.execute {
-
-            objectDetectorHelper =
-                ObjectDetectorHelper(
-                    context = requireContext(),
-                    threshold = viewModel.currentThreshold,
-                    currentDelegate = viewModel.currentDelegate,
-                    currentModel = viewModel.currentModel,
-                    maxResults = viewModel.currentMaxResults,
-                    runningMode = RunningMode.VIDEO,
-                    objectDetectorListener = this
-                )
-
-            activity?.runOnUiThread {
-                fragmentGalleryBinding.videoView.visibility = View.GONE
-                fragmentGalleryBinding.progress.visibility = View.VISIBLE
-            }
-
-            objectDetectorHelper.detectVideoFile(uri, VIDEO_INTERVAL_MS)
-                ?.let { resultBundle ->
-                    activity?.runOnUiThread { displayVideoResult(resultBundle) }
-                }
-                ?: run {
-                    activity?.runOnUiThread {
-                        fragmentGalleryBinding.progress.visibility = View.GONE
-                    }
-                    Log.e(TAG, "Error running object detection.")
-                }
-
-            objectDetectorHelper.clearObjectDetector()
-        }
-    }
-
-    // Setup and display the video.
-    private fun displayVideoResult(result: ObjectDetectorHelper.ResultBundle) {
-
-        fragmentGalleryBinding.videoView.visibility = View.VISIBLE
-        fragmentGalleryBinding.progress.visibility = View.GONE
-
-        fragmentGalleryBinding.videoView.start()
-        val videoStartTimeMs = SystemClock.uptimeMillis()
-
-        backgroundExecutor.scheduleAtFixedRate(
-            {
-                activity?.runOnUiThread {
-                    val videoElapsedTimeMs =
-                        SystemClock.uptimeMillis() - videoStartTimeMs
-                    val resultIndex =
-                        videoElapsedTimeMs.div(VIDEO_INTERVAL_MS).toInt()
-
-                    if (resultIndex >= result.results.size || fragmentGalleryBinding.videoView.visibility == View.GONE) {
-                        // The video playback has finished so we stop drawing bounding boxes
-                        backgroundExecutor.shutdown()
-                    } else {
-                        fragmentGalleryBinding.overlay.setResults(
-                            result.results[resultIndex],
-                            result.inputImageHeight,
-                            result.inputImageWidth,
-                            result.inputImageRotation
-                        )
-
-                        setUiEnabled(true)
-                    }
-                }
-            },
-            0,
-            VIDEO_INTERVAL_MS,
-            TimeUnit.MILLISECONDS
-        )
-    }
-
-    private fun updateDisplayView(mediaType: MediaType) {
-        fragmentGalleryBinding.overlay.clear()
-        fragmentGalleryBinding.imageResult.visibility =
-            if (mediaType == MediaType.IMAGE) View.VISIBLE else View.GONE
-        fragmentGalleryBinding.videoView.visibility =
-            if (mediaType == MediaType.VIDEO) View.VISIBLE else View.GONE
-        fragmentGalleryBinding.tvPlaceholder.visibility =
-            if (mediaType == MediaType.UNKNOWN) View.VISIBLE else View.GONE
     }
 
     // Check the type of media that user selected.
@@ -317,40 +105,214 @@ class GalleryFragment : Fragment(), ObjectDetectorHelper.DetectorListener {
         return MediaType.UNKNOWN
     }
 
-    private fun setUiEnabled(enabled: Boolean) {
-        fragmentCameraBinding.fabGetContent.isEnabled = enabled
-        fragmentGalleryBinding.bottomSheetLayout.thresholdMinus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.thresholdPlus.isEnabled =
-            enabled
-    }
-
-    private fun detectError() {
-        activity?.runOnUiThread {
-            fragmentGalleryBinding.progress.visibility = View.GONE
-            setUiEnabled(true)
-            updateDisplayView(MediaType.UNKNOWN)
-        }
-    }
-
-    override fun onError(error: String, errorCode: Int) {
-        detectError()
-        activity?.runOnUiThread {
-            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
-            if (errorCode == ObjectDetectorHelper.GPU_ERROR) {
-                // Error handling
-            }
-        }
-    }
-
     override fun onResults(resultBundle: ObjectDetectorHelper.ResultBundle) {
         // no-op
     }
 
-    companion object {
-        private const val TAG = "GalleryFragment"
+    fun searchRecipe(ingredientList: ArrayList<String>): MutableList<String> {
+        //val file = File("assets/recipes.json").absoluteFile.inputStream()
+        //val recipes = file.bufferedReader().use { it.readText() }
+        println(ingredientList)
+        val recipes = "[\n" +
+                "    {\n" +
+                "      \"id\": 1,\n" +
+                "      \"name\": \"Chicken Fried Rice\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"chicken\", \"quantity\": \"200g\"},\n" +
+                "        {\"name\": \"rice\", \"quantity\": \"1 cup\"},\n" +
+                "        {\"name\": \"egg\", \"quantity\": \"2\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"carrot\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"mushroom\", \"quantity\": \"3\"},\n" +
+                "        {\"name\": \"soy sauce\", \"quantity\": \"2 tbsp\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Cook the rice and set aside.\",\n" +
+                "        \"In a pan, cook the diced chicken until browned.\",\n" +
+                "        \"Add chopped onion, carrot, and mushroom to the pan and stir-fry until vegetables are tender.\",\n" +
+                "        \"Push the ingredients to one side of the pan and scramble the egg on the other side.\",\n" +
+                "        \"Mix everything together and add cooked rice.\",\n" +
+                "        \"Pour in soy sauce and stir until everything is well combined.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 2,\n" +
+                "      \"name\": \"Tomato and Lettuce Salad\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"lettuce\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"tomato\", \"quantity\": \"2\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"olive oil\", \"quantity\": \"2 tbsp\"},\n" +
+                "        {\"name\": \"lemon juice\", \"quantity\": \"1 tbsp\"},\n" +
+                "        {\"name\": \"salt\", \"quantity\": \"to taste\"},\n" +
+                "        {\"name\": \"pepper\", \"quantity\": \"to taste\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Chop the lettuce, tomato, and onion.\",\n" +
+                "        \"In a large bowl, combine the chopped vegetables.\",\n" +
+                "        \"Drizzle with olive oil and lemon juice.\",\n" +
+                "        \"Season with salt and pepper to taste.\",\n" +
+                "        \"Toss everything together until well mixed.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 3,\n" +
+                "      \"name\": \"Mushroom and Egg Stir-fry\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"mushroom\", \"quantity\": \"6\"},\n" +
+                "        {\"name\": \"egg\", \"quantity\": \"3\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"soy sauce\", \"quantity\": \"1 tbsp\"},\n" +
+                "        {\"name\": \"garlic\", \"quantity\": \"2 cloves\"},\n" +
+                "        {\"name\": \"olive oil\", \"quantity\": \"2 tbsp\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Slice the mushrooms and chop the onion.\",\n" +
+                "        \"Heat olive oil in a pan and sauté the onion until translucent.\",\n" +
+                "        \"Add the mushrooms and cook until they release their juices and start to brown.\",\n" +
+                "        \"Push the vegetables to one side of the pan and scramble the eggs on the other side.\",\n" +
+                "        \"Mix everything together and add a splash of soy sauce.\",\n" +
+                "        \"Stir well and serve hot.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 4,\n" +
+                "      \"name\": \"Chicken and Carrot Stew\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"chicken\", \"quantity\": \"300g\"},\n" +
+                "        {\"name\": \"carrot\", \"quantity\": \"2\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"tomato\", \"quantity\": \"2\"},\n" +
+                "        {\"name\": \"garlic\", \"quantity\": \"3 cloves\"},\n" +
+                "        {\"name\": \"chicken broth\", \"quantity\": \"4 cups\"},\n" +
+                "        {\"name\": \"salt\", \"quantity\": \"to taste\"},\n" +
+                "        {\"name\": \"pepper\", \"quantity\": \"to taste\"},\n" +
+                "        {\"name\": \"thyme\", \"quantity\": \"1 tsp\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"In a large pot, heat some oil and sauté chopped onion and garlic until fragrant.\",\n" +
+                "        \"Add diced chicken and cook until browned.\",\n" +
+                "        \"Add chopped carrots and tomatoes to the pot.\",\n" +
+                "        \"Pour in chicken broth and add thyme, salt, and pepper.\",\n" +
+                "        \"Bring to a boil, then reduce heat and let simmer until vegetables are tender and chicken is cooked through.\",\n" +
+                "        \"Serve hot.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 5,\n" +
+                "      \"name\": \"Carrot and Tomato Soup\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"carrot\", \"quantity\": \"3\"},\n" +
+                "        {\"name\": \"tomato\", \"quantity\": \"4\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"garlic\", \"quantity\": \"2 cloves\"},\n" +
+                "        {\"name\": \"chicken broth\", \"quantity\": \"4 cups\"},\n" +
+                "        {\"name\": \"olive oil\", \"quantity\": \"2 tbsp\"},\n" +
+                "        {\"name\": \"salt\", \"quantity\": \"to taste\"},\n" +
+                "        {\"name\": \"pepper\", \"quantity\": \"to taste\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Chop the carrots, tomatoes, and onion.\",\n" +
+                "        \"In a pot, heat olive oil and sauté the onion and garlic until fragrant.\",\n" +
+                "        \"Add the carrots and cook for a few minutes.\",\n" +
+                "        \"Add the tomatoes and chicken broth.\",\n" +
+                "        \"Bring to a boil, then reduce heat and let simmer until carrots are tender.\",\n" +
+                "        \"Blend the soup until smooth and season with salt and pepper to taste.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 6,\n" +
+                "      \"name\": \"Chicken Lettuce Wraps\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"chicken\", \"quantity\": \"200g\"},\n" +
+                "        {\"name\": \"lettuce\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1/2\"},\n" +
+                "        {\"name\": \"mushroom\", \"quantity\": \"3\"},\n" +
+                "        {\"name\": \"soy sauce\", \"quantity\": \"2 tbsp\"},\n" +
+                "        {\"name\": \"garlic\", \"quantity\": \"2 cloves\"},\n" +
+                "        {\"name\": \"olive oil\", \"quantity\": \"2 tbsp\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Dice the chicken and chop the onion and mushrooms.\",\n" +
+                "        \"Heat olive oil in a pan and sauté the onion and garlic until fragrant.\",\n" +
+                "        \"Add the chicken and cook until browned.\",\n" +
+                "        \"Add the mushrooms and cook until tender.\",\n" +
+                "        \"Stir in soy sauce.\",\n" +
+                "        \"Spoon the mixture into lettuce leaves and serve.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 7,\n" +
+                "      \"name\": \"Tomato Egg Drop Soup\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"tomato\", \"quantity\": \"3\"},\n" +
+                "        {\"name\": \"egg\", \"quantity\": \"2\"},\n" +
+                "        {\"name\": \"chicken broth\", \"quantity\": \"4 cups\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"garlic\", \"quantity\": \"2 cloves\"},\n" +
+                "        {\"name\": \"cornstarch\", \"quantity\": \"1 tbsp\"},\n" +
+                "        {\"name\": \"water\", \"quantity\": \"2 tbsp\"},\n" +
+                "        {\"name\": \"salt\", \"quantity\": \"to taste\"},\n" +
+                "        {\"name\": \"pepper\", \"quantity\": \"to taste\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Chop the tomatoes and onion.\",\n" +
+                "        \"In a pot, heat some oil and sauté the onion and garlic until fragrant.\",\n" +
+                "        \"Add the tomatoes and cook until soft.\",\n" +
+                "        \"Pour in the chicken broth and bring to a boil.\",\n" +
+                "        \"Mix cornstarch with water to make a slurry and add to the soup.\",\n" +
+                "        \"Beat the eggs and slowly drizzle them into the boiling soup while stirring to create egg ribbons.\",\n" +
+                "        \"Season with salt and pepper to taste.\"\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"id\": 8,\n" +
+                "      \"name\": \"Stuffed Mushrooms\",\n" +
+                "      \"ingredients\": [\n" +
+                "        {\"name\": \"mushroom\", \"quantity\": \"6\"},\n" +
+                "        {\"name\": \"onion\", \"quantity\": \"1\"},\n" +
+                "        {\"name\": \"garlic\", \"quantity\": \"2 cloves\"},\n" +
+                "        {\"name\": \"bread crumbs\", \"quantity\": \"1/2 cup\"},\n" +
+                "        {\"name\": \"cheese\", \"quantity\": \"1/2 cup\"},\n" +
+                "        {\"name\": \"olive oil\", \"quantity\": \"2 tbsp\"},\n" +
+                "        {\"name\": \"salt\", \"quantity\": \"to taste\"},\n" +
+                "        {\"name\": \"pepper\", \"quantity\": \"to taste\"}\n" +
+                "      ],\n" +
+                "      \"instructions\": [\n" +
+                "        \"Preheat the oven to 180°C (350°F).\",\n" +
+                "        \"Remove the stems from the mushrooms and chop them finely.\",\n" +
+                "        \"In a pan, heat olive oil and sauté the chopped mushroom stems, onion, and garlic until tender.\",\n" +
+                "        \"Mix in bread crumbs and cheese, and season with salt and pepper.\",\n" +
+                "        \"Stuff the mushroom caps with the mixture.\",\n" +
+                "        \"Place the stuffed mushrooms on a baking sheet and bake for 15-20 minutes or until the mushrooms are tender and the tops are golden.\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ]\n"
 
-        // Value used to get frames at specific intervals for inference (e.g. every 300ms)
-        private const val VIDEO_INTERVAL_MS = 300L
+        val recipesArray = Gson().fromJson(recipes, Array<Recipe>::class.java)
+        val foundRecipes: MutableList<String> = mutableListOf()
+
+        // Iterate over each recipe
+        for (recipe in recipesArray) {
+            val recipeIngredients = recipe.ingredients.map { it.name }
+
+            //Check if any ingredient in ingredientList is present in this recipe
+            if (ingredientList.any { recipeIngredients.contains(it) }) {
+                println("Recipe '${recipe.name}' contains all ingredients: $ingredientList")
+                val joinedInstructions = recipe.instructions.stream().collect(Collectors.joining("\n"));
+                foundRecipes.add(recipe.name + "\n\n" + joinedInstructions)
+            }
+        }
+
+        return foundRecipes
+    }
+
+    override fun onError(error: String, errorCode: Int) {
+        activity?.runOnUiThread {
+            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
+            if (errorCode == ObjectDetectorHelper.GPU_ERROR) {
+                // Error handle
+            }
+        }
     }
 }

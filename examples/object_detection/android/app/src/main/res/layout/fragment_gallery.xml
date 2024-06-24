@@ -24,51 +24,22 @@
         android:layout_height="match_parent"
         android:layout_marginBottom="@dimen/bottom_sheet_peek_height">
 
-        <TextView
-            android:id="@+id/tvPlaceholder"
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="@string/tv_recipes_placeholder"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:visibility="visible">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="@dimen/bottom_sheet_peek_height">
-
-            <ImageView
-                android:id="@+id/imageResult"
+            <TextView
+                android:id="@+id/tvPlaceholder"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitStart"
-                android:visibility="gone" />
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingTop="20dp"
+                android:text="@string/tv_recipes_placeholder"
+                app:layout_constraintTop_toTopOf="parent" />
+        </ScrollView>
 
-            <VideoView
-                android:id="@+id/videoView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone" />
 
-            <com.google.mediapipe.examples.objectdetection.OverlayView
-                android:id="@+id/overlay"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_centerInParent="true" />
-
-            <androidx.core.widget.ContentLoadingProgressBar
-                android:id="@+id/progress"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_centerInParent="true"
-                android:visibility="gone"
-                android:indeterminate="true"
-                android:theme="@style/AppThemeProgressStyle"
-                style="?android:attr/progressBarStyle"
-                />
-
-        </RelativeLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <include

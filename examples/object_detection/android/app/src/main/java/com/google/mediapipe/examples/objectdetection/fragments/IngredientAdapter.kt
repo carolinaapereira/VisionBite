@@ -29,6 +29,18 @@ class IngredientAdapter(
         }
     }
 
+    fun addItem(element: String){
+        val position = ingredients.size
+        ingredients.add(element)
+        notifyItemInserted(position)
+        notifyItemRangeChanged(position, ingredients.size)
+    }
+    fun removeItem(position: Int) {
+        ingredients.removeAt(position)
+        notifyItemRemoved(position)
+        notifyItemRangeChanged(position, ingredients.size)
+    }
+
     override fun getItemCount(): Int {
         return ingredients.size
     }
